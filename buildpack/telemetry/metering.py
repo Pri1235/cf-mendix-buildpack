@@ -21,12 +21,38 @@ def _copy_custom_sidecar(buildpack_dir, build_path):
     
     if os.path.exists(source_dir):
         logging.info(f"Copying custom sidecar from {source_dir} to {target_dir}")
-        shutil.copytree(source_dir, target_dir, dirs_exist_ok=True)
+        
+        # Create target directory if it doesn't exist
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # Copy all files and directories from source to target
+        for item in os.listdir(source_dir):
+            source_item = os.path.join(source_dir, item)
+            target_item = os.path.join(target_dir, item)
+            
+            if os.path.isdir(source_item):
+                shutil.copytree(source_item, target_item, dirs_exist_ok=True)
+                logging.info(f"Copied directory: {item}")
+            else:
+                shutil.copy2(source_item, target_item)
+                logging.info(f"Copied file: {item}")
         
         # Make the Python script executable
         sidecar_script = os.path.join(target_dir, BINARY)
         if os.path.exists(sidecar_script):
             os.chmod(sidecar_script, 0o755)
+            logging.info(f"Made {BINARY} executable")
+        
+        # Verify vendor directory was copied
+        vendor_dir = os.path.join(target_dir, "vendor")
+        if os.path.exists(vendor_dir):
+            logging.info(f"Vendor directory copied successfully: {vendor_dir}")
+            # List vendor contents for debugging
+            vendor_contents = os.listdir(vendor_dir)
+            logging.info(f"Vendor directory contents: {vendor_contents}")
+        else:
+            logging.error(f"Vendor directory not found after copying: {vendor_dir}")
+            
         return True
     else:
         logging.error(f"Custom sidecar source directory not found: {source_dir}")
@@ -114,14 +140,43 @@ def _is_sidecar_installed():
     sidecar_script = os.path.join(SIDECAR_DIR, BINARY)
     vendor_dir = os.path.join(SIDECAR_DIR, "vendor")
     
+    logging.info(f"Checking sidecar installation:")
+    logging.info(f"  Script path: {sidecar_script}")
+    logging.info(f"  Vendor path: {vendor_dir}")
+    logging.info(f"  Script exists: {os.path.exists(sidecar_script)}")
+    logging.info(f"  Vendor exists: {os.path.exists(vendor_dir)}")
+    
     if os.path.exists(sidecar_script):
         if os.path.exists(vendor_dir):
+            # List vendor contents for debugging
+            try:
+                vendor_contents = os.listdir(vendor_dir)
+                logging.info(f"Vendor directory contents: {vendor_contents}")
+            except Exception as e:
+                logging.error(f"Error listing vendor directory: {e}")
+            
             logging.info("Custom Python sidecar and dependencies found")
             return True
         else:
-            logging.info("Custom Python sidecar found but vendor dependencies missing")
+            logging.error("Custom Python sidecar found but vendor dependencies missing")
+            # List what's actually in the sidecar directory
+            try:
+                sidecar_contents = os.listdir(SIDECAR_DIR)
+                logging.info(f"Sidecar directory contents: {sidecar_contents}")
+            except Exception as e:
+                logging.error(f"Error listing sidecar directory: {e}")
     else:
-        logging.info("Custom Python sidecar not found")
+        logging.error("Custom Python sidecar not found")
+        # Check if the directory exists at all
+        if os.path.exists(SIDECAR_DIR):
+            try:
+                sidecar_contents = os.listdir(SIDECAR_DIR)
+                logging.info(f"Sidecar directory exists but script missing. Contents: {sidecar_contents}")
+            except Exception as e:
+                logging.error(f"Error listing sidecar directory: {e}")
+        else:
+            logging.error(f"Sidecar directory does not exist: {SIDECAR_DIR}")
+    
     return False
 
 
