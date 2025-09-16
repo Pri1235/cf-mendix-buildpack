@@ -11,31 +11,37 @@ NAMESPACE = "metering"
 BINARY = "sidecar.py"
 SIDECAR_DIR = os.path.join("/home/vcap/app", NAMESPACE)
 SIDECAR_CONFIG_FILE = "conf.json"
-CUSTOM_SIDECAR_SOURCE = "custom-sidecar"
+EMBEDDED_SIDECAR_SOURCE = "lib/hana-sidecar"  # Changed to lib structure
 
 
-def _copy_custom_sidecar(buildpack_dir, build_path):
-    """Copy custom sidecar files to the build directory"""
-    source_dir = os.path.join(buildpack_dir, CUSTOM_SIDECAR_SOURCE)
+def _copy_embedded_sidecar(buildpack_dir, build_path):
+    """Copy embedded sidecar files from lib directory to the build directory"""
+    source_dir = os.path.join(buildpack_dir, EMBEDDED_SIDECAR_SOURCE)
     target_dir = os.path.join(build_path, NAMESPACE)
     
-    logging.info(f"Starting sidecar copy process...")
+    logging.info(f"=== EMBEDDED SIDECAR COPY ===")
     logging.info(f"Source directory: {source_dir}")
     logging.info(f"Target directory: {target_dir}")
     logging.info(f"Source exists: {os.path.exists(source_dir)}")
     
     if not os.path.exists(source_dir):
-        logging.error(f"Custom sidecar source directory not found: {source_dir}")
+        logging.error(f"Embedded sidecar source directory not found: {source_dir}")
         # List what's actually in the buildpack directory
         try:
             buildpack_contents = os.listdir(buildpack_dir)
             logging.info(f"Buildpack directory contents: {buildpack_contents}")
+            
+            # Check if lib directory exists
+            lib_dir = os.path.join(buildpack_dir, "lib")
+            if os.path.exists(lib_dir):
+                lib_contents = os.listdir(lib_dir)
+                logging.info(f"Lib directory contents: {lib_contents}")
         except Exception as e:
             logging.error(f"Error listing buildpack directory: {e}")
         return False
     
     try:
-        # List source directory contents
+        # List source directory contents first
         source_contents = os.listdir(source_dir)
         logging.info(f"Source directory contents: {source_contents}")
         
@@ -108,7 +114,8 @@ def _copy_custom_sidecar(buildpack_dir, build_path):
             except Exception as e:
                 logging.error(f"Error listing vendor directory: {e}")
         else:
-            logging.error(f"Vendor directory not found after copying: {vendor_dir}")
+            logging.error(f"CRITICAL: Vendor directory not found after copying: {vendor_dir}")
+            return False
         
         # List final target directory contents
         try:
@@ -117,16 +124,19 @@ def _copy_custom_sidecar(buildpack_dir, build_path):
         except Exception as e:
             logging.error(f"Error listing final target directory: {e}")
             
+        logging.info(f"=== EMBEDDED SIDECAR COPY COMPLETE ===")
         return True
         
     except Exception as e:
-        logging.error(f"Error during sidecar copy process: {e}")
+        logging.error(f"Critical error during embedded sidecar copy process: {e}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
         return False
 
 
 def _download(buildpack_dir, build_path, cache_dir):
-    # Use custom sidecar instead of downloading from dependencies
-    return _copy_custom_sidecar(buildpack_dir, build_path)
+    # Use embedded sidecar instead of downloading from dependencies
+    return _copy_embedded_sidecar(buildpack_dir, build_path)
 
 
 def _is_usage_metering_enabled():
@@ -267,6 +277,17 @@ def _is_sidecar_installed():
 
 def stage(buildpack_path, build_path, cache_dir):
     try:
+        logging.info("=== METERING STAGE START ===")
+        logging.info(f"Buildpack path: {buildpack_path}")
+        logging.info(f"Build path: {build_path}")
+        
+        # List buildpack directory contents
+        try:
+            buildpack_contents = os.listdir(buildpack_path)
+            logging.info(f"Buildpack directory contents: {buildpack_contents}")
+        except Exception as e:
+            logging.error(f"Error listing buildpack directory: {e}")
+        
         if _is_usage_metering_enabled():
             logging.info("Usage metering is enabled - deploying custom sidecar")
             success = _download(buildpack_path, build_path, cache_dir)
@@ -290,11 +311,14 @@ def stage(buildpack_path, build_path, cache_dir):
                 logging.error("Failed to copy custom sidecar")
         else:
             logging.info("Usage metering is NOT enabled")
+        
+        logging.info("=== METERING STAGE END ===")
     except Exception as e:
-        logging.info(
+        logging.error(
             f"Encountered an exception while staging the metering sidecar: {e}. "
-            "This is nothing to worry about."
         )
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
 
 
 def run():
