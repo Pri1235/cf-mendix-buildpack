@@ -16,11 +16,12 @@ class TestCaseDeployWithMetering(basetest.BaseTestWithPostgreSQL):
     def _test_metering_running(self, mda_file):
         self._deploy_app(mda_file)
         self.assert_app_running()
-        output = self.run_on_container("ps -ef | grep 'metering-sidecar'")
+        # Look for the Python sidecar process instead of the old binary
+        output = self.run_on_container("ps -ef | grep 'sidecar.py'")
         assert output is not None
-        assert str(output).find("/home/vcap/app/metering/metering-sidecar") >= 0
-
-        self.assert_string_in_recent_logs("Scheduling call home every 43200s")
+        assert str(output).find("python3") >= 0
+        assert str(output).find("/home/vcap/app/metering/sidecar.py") >= 0
+        self.assert_string_in_recent_logs("Sidecar module is running")
 
     def test_metering_mx8(self):
         self._test_metering_running("Mendix8.1.1.58432_StarterApp.mda")
