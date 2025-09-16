@@ -19,43 +19,108 @@ def _copy_custom_sidecar(buildpack_dir, build_path):
     source_dir = os.path.join(buildpack_dir, CUSTOM_SIDECAR_SOURCE)
     target_dir = os.path.join(build_path, NAMESPACE)
     
-    if os.path.exists(source_dir):
-        logging.info(f"Copying custom sidecar from {source_dir} to {target_dir}")
+    logging.info(f"Starting sidecar copy process...")
+    logging.info(f"Source directory: {source_dir}")
+    logging.info(f"Target directory: {target_dir}")
+    logging.info(f"Source exists: {os.path.exists(source_dir)}")
+    
+    if not os.path.exists(source_dir):
+        logging.error(f"Custom sidecar source directory not found: {source_dir}")
+        # List what's actually in the buildpack directory
+        try:
+            buildpack_contents = os.listdir(buildpack_dir)
+            logging.info(f"Buildpack directory contents: {buildpack_contents}")
+        except Exception as e:
+            logging.error(f"Error listing buildpack directory: {e}")
+        return False
+    
+    try:
+        # List source directory contents
+        source_contents = os.listdir(source_dir)
+        logging.info(f"Source directory contents: {source_contents}")
         
         # Create target directory if it doesn't exist
         os.makedirs(target_dir, exist_ok=True)
+        logging.info(f"Created target directory: {target_dir}")
         
         # Copy all files and directories from source to target
-        for item in os.listdir(source_dir):
+        for item in source_contents:
+            if item.startswith('.'):  # Skip hidden files like .DS_Store
+                logging.info(f"Skipping hidden file: {item}")
+                continue
+                
             source_item = os.path.join(source_dir, item)
             target_item = os.path.join(target_dir, item)
             
-            if os.path.isdir(source_item):
-                shutil.copytree(source_item, target_item, dirs_exist_ok=True)
-                logging.info(f"Copied directory: {item}")
-            else:
-                shutil.copy2(source_item, target_item)
-                logging.info(f"Copied file: {item}")
+            logging.info(f"Processing item: {item}")
+            logging.info(f"  Source: {source_item} (exists: {os.path.exists(source_item)})")
+            logging.info(f"  Target: {target_item}")
+            logging.info(f"  Is directory: {os.path.isdir(source_item)}")
+            
+            try:
+                if os.path.isdir(source_item):
+                    if os.path.exists(target_item):
+                        logging.info(f"  Removing existing target directory")
+                        shutil.rmtree(target_item)  # Remove existing directory
+                    
+                    logging.info(f"  Copying directory tree...")
+                    shutil.copytree(source_item, target_item)
+                    logging.info(f"  Successfully copied directory: {item}")
+                    
+                    # If it's the vendor directory, list its contents for verification
+                    if item == "vendor":
+                        try:
+                            vendor_contents = os.listdir(target_item)
+                            logging.info(f"  Vendor directory copied with contents: {vendor_contents}")
+                            
+                            # Check specific HANA files
+                            hdbcli_path = os.path.join(target_item, "hdbcli")
+                            pyhdbcli_path = os.path.join(target_item, "pyhdbcli.abi3.so")
+                            logging.info(f"  hdbcli directory exists: {os.path.exists(hdbcli_path)}")
+                            logging.info(f"  pyhdbcli.abi3.so exists: {os.path.exists(pyhdbcli_path)}")
+                        except Exception as e:
+                            logging.error(f"  Error verifying vendor contents: {e}")
+                else:
+                    shutil.copy2(source_item, target_item)
+                    logging.info(f"  Successfully copied file: {item}")
+            except Exception as e:
+                logging.error(f"  CRITICAL ERROR copying {item}: {e}")
+                # For vendor directory, this is critical - fail the whole operation
+                if item == "vendor":
+                    logging.error(f"  Vendor directory copy failed - aborting sidecar setup")
+                    return False
+                continue
         
         # Make the Python script executable
         sidecar_script = os.path.join(target_dir, BINARY)
         if os.path.exists(sidecar_script):
             os.chmod(sidecar_script, 0o755)
             logging.info(f"Made {BINARY} executable")
+        else:
+            logging.error(f"Sidecar script not found after copy: {sidecar_script}")
         
         # Verify vendor directory was copied
         vendor_dir = os.path.join(target_dir, "vendor")
         if os.path.exists(vendor_dir):
-            logging.info(f"Vendor directory copied successfully: {vendor_dir}")
-            # List vendor contents for debugging
-            vendor_contents = os.listdir(vendor_dir)
-            logging.info(f"Vendor directory contents: {vendor_contents}")
+            try:
+                vendor_contents = os.listdir(vendor_dir)
+                logging.info(f"Vendor directory copied successfully with contents: {vendor_contents}")
+            except Exception as e:
+                logging.error(f"Error listing vendor directory: {e}")
         else:
             logging.error(f"Vendor directory not found after copying: {vendor_dir}")
+        
+        # List final target directory contents
+        try:
+            target_contents = os.listdir(target_dir)
+            logging.info(f"Final target directory contents: {target_contents}")
+        except Exception as e:
+            logging.error(f"Error listing final target directory: {e}")
             
         return True
-    else:
-        logging.error(f"Custom sidecar source directory not found: {source_dir}")
+        
+    except Exception as e:
+        logging.error(f"Error during sidecar copy process: {e}")
         return False
 
 
