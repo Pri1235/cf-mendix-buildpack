@@ -65,8 +65,28 @@ def _download(buildpack_dir, build_path, cache_dir):
 
 
 def _is_usage_metering_enabled():
+    # Enable custom HANA sidecar when VCAP_SERVICES contains HANA
+    if "VCAP_SERVICES" in os.environ:
+        try:
+            vcap_services = json.loads(os.environ["VCAP_SERVICES"])
+            if "hana" in vcap_services:
+                logging.info("HANA service detected in VCAP_SERVICES - enabling custom sidecar")
+                return True
+        except Exception as e:
+            logging.warning(f"Error parsing VCAP_SERVICES: {e}")
+    
+    # Original metering check for backwards compatibility
     if "MXUMS_LICENSESERVER_URL" in os.environ:
+        logging.info("MXUMS_LICENSESERVER_URL found - enabling metering")
         return True
+    
+    # Check for custom environment variable
+    if "ENABLE_HANA_SIDECAR" in os.environ:
+        logging.info("ENABLE_HANA_SIDECAR found - enabling custom sidecar")
+        return True
+        
+    logging.info("No metering enablement conditions met")
+    return False
 
 
 def _get_project_id(file_path):
@@ -214,20 +234,35 @@ def stage(buildpack_path, build_path, cache_dir):
 
 def run():
     try:
-        if _is_usage_metering_enabled() and _is_sidecar_installed():
+        logging.info("Checking if metering sidecar should be started...")
+        metering_enabled = _is_usage_metering_enabled()
+        sidecar_installed = _is_sidecar_installed()
+        
+        logging.info(f"Metering enabled: {metering_enabled}")
+        logging.info(f"Sidecar installed: {sidecar_installed}")
+        
+        if metering_enabled and sidecar_installed:
             logging.info("Starting custom Python sidecar")
             
             # Run the Python sidecar script
             sidecar_script = os.path.join(SIDECAR_DIR, BINARY)
             
             # Use python3 to run the script
-            subprocess.Popen(
+            process = subprocess.Popen(
                 ["python3", sidecar_script],
                 env=_set_up_environment(),
                 cwd=SIDECAR_DIR,  # Set working directory to sidecar directory
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
             )
+            
+            logging.info(f"Custom Python sidecar started with PID: {process.pid}")
+            
+        elif not metering_enabled:
+            logging.info("Metering not enabled - sidecar will not start")
+        elif not sidecar_installed:
+            logging.info("Sidecar not properly installed - cannot start")
     except Exception as e:
-        logging.info(
-            f"Encountered an exception while starting the metering sidecar: {e}. "
-            "This is nothing to worry about."
+        logging.error(
+            f"Encountered an exception while starting the metering sidecar: {e}"
         )
