@@ -336,16 +336,17 @@ def run():
             # Run the Python sidecar script
             sidecar_script = os.path.join(SIDECAR_DIR, BINARY)
             
-            # Use python3 to run the script
+            # FIXED: Remove stdout/stderr capture to allow logs to flow to CF logs
             process = subprocess.Popen(
                 ["python3", sidecar_script],
                 env=_set_up_environment(),
                 cwd=SIDECAR_DIR,  # Set working directory to sidecar directory
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                # Removed: stdout=subprocess.PIPE,
+                # Removed: stderr=subprocess.PIPE
             )
             
             logging.info(f"Custom Python sidecar started with PID: {process.pid}")
+            logging.info("Sidecar logs should now appear in CF logs")
             
         elif not metering_enabled:
             logging.info("Metering not enabled - sidecar will not start")
