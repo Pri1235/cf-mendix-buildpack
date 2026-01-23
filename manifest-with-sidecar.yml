@@ -1,0 +1,36 @@
+---
+# Example CF Manifest with Sidecar Configuration
+# This manifest demonstrates the hybrid approach where:
+# 1. The buildpack stages/installs the sidecar files during 'cf push'
+# 2. CF manifest starts the sidecar as a separate process
+
+applications:
+  - name: my-mendix-app
+    memory: 2G
+    instances: 1
+    buildpack: https://github.com/your-org/cf-mendix-buildpack.git
+    
+    # Environment variables
+    env:
+      # Enable hybrid approach: buildpack stages files but doesn't start the process
+      USE_CF_MANIFEST_SIDECAR: "true"
+      
+      # Enable HANA sidecar (required for buildpack to stage the files)
+      ENABLE_HANA_SIDECAR: "true"
+      
+      # Your other environment variables
+      # VCAP_SERVICES will be automatically bound if you bind HANA service
+    
+    # Sidecar process definition
+    sidecars:
+      - name: hana-sidecar
+        # Command to run the sidecar
+        # The buildpack will have already copied files to /home/vcap/app/metering/
+        command: python3 /home/vcap/app/metering/sidecar.py
+        
+        # Process types that must be running before the sidecar starts
+        # This ensures the main app (web process) starts first
+        process_types: ['web']
+        
+        # Memory limit for the sidecar process
+        memory: 256M
