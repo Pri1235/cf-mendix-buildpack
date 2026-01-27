@@ -323,7 +323,7 @@ def stage(buildpack_path, build_path, cache_dir):
 
 def run():
     try:
-        logging.info("Checking if metering sidecar should be started...")
+        logging.info("Checking if metering sidecar files are ready...")
         metering_enabled = _is_usage_metering_enabled()
         sidecar_installed = _is_sidecar_installed()
         
@@ -331,28 +331,14 @@ def run():
         logging.info(f"Sidecar installed: {sidecar_installed}")
         
         if metering_enabled and sidecar_installed:
-            logging.info("Starting custom Python sidecar")
-            
-            # Run the Python sidecar script
-            sidecar_script = os.path.join(SIDECAR_DIR, BINARY)
-            
-            # FIXED: Remove stdout/stderr capture to allow logs to flow to CF logs
-            process = subprocess.Popen(
-                ["python3", sidecar_script],
-                env=_set_up_environment(),
-                cwd=SIDECAR_DIR,  # Set working directory to sidecar directory
-                # Removed: stdout=subprocess.PIPE,
-                # Removed: stderr=subprocess.PIPE
-            )
-            
-            logging.info(f"Custom Python sidecar started with PID: {process.pid}")
-            logging.info("Sidecar logs should now appear in CF logs")
+            logging.info("Sidecar files staged successfully at /home/vcap/app/metering/")
+            logging.info("Sidecar will be started by CF manifest - not starting from buildpack")
             
         elif not metering_enabled:
-            logging.info("Metering not enabled - sidecar will not start")
+            logging.info("Metering not enabled - sidecar not staged")
         elif not sidecar_installed:
-            logging.info("Sidecar not properly installed - cannot start")
+            logging.info("Sidecar not properly installed - check staging logs")
     except Exception as e:
         logging.error(
-            f"Encountered an exception while starting the metering sidecar: {e}"
+            f"Encountered an exception while checking metering sidecar: {e}"
         )
