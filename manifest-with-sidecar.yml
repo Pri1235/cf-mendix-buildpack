@@ -9,28 +9,28 @@ applications:
     memory: 2G
     instances: 1
     buildpack: https://github.com/your-org/cf-mendix-buildpack.git
-    
+
     # Environment variables
     env:
       # Enable hybrid approach: buildpack stages files but doesn't start the process
       USE_CF_MANIFEST_SIDECAR: "true"
-      
+
       # Enable HANA sidecar (required for buildpack to stage the files)
       ENABLE_HANA_SIDECAR: "true"
-      
+
       # Your other environment variables
       # VCAP_SERVICES will be automatically bound if you bind HANA service
-    
+
     # Sidecar process definition
     sidecars:
       - name: hana-sidecar
-        # Command to run the sidecar
+        # Command to run the sidecar binary
         # The buildpack will have already copied files to /home/vcap/app/metering/
-        command: python3 /home/vcap/app/metering/sidecar.py
-        
+        command: /home/vcap/app/metering/sap-metering-sidecar
+
         # Process types that must be running before the sidecar starts
         # This ensures the main app (web process) starts first
-        process_types: ['web']
-        
+        process_types: ["web"]
+
         # Memory limit for the sidecar process
         memory: 256M

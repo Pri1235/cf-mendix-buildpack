@@ -8,10 +8,10 @@ from buildpack import util
 from buildpack.infrastructure import database
 
 NAMESPACE = "metering"
-BINARY = "sidecar.py"
+BINARY = "sap-metering-sidecar"
 SIDECAR_DIR = os.path.join("/home/vcap/app", NAMESPACE)
 SIDECAR_CONFIG_FILE = "conf.json"
-EMBEDDED_SIDECAR_SOURCE = "lib/hana-sidecar"  # Changed to lib structure
+EMBEDDED_SIDECAR_SOURCE = "custom-sidecar"  # Use custom binary from custom-sidecar/
 
 
 def _copy_embedded_sidecar(buildpack_dir, build_path):
@@ -91,31 +91,26 @@ def _copy_embedded_sidecar(buildpack_dir, build_path):
                     logging.info(f"  Successfully copied file: {item}")
             except Exception as e:
                 logging.error(f"  CRITICAL ERROR copying {item}: {e}")
-                # For vendor directory, this is critical - fail the whole operation
-                if item == "vendor":
-                    logging.error(f"  Vendor directory copy failed - aborting sidecar setup")
-                    return False
                 continue
         
-        # Make the Python script executable
-        sidecar_script = os.path.join(target_dir, BINARY)
-        if os.path.exists(sidecar_script):
-            os.chmod(sidecar_script, 0o755)
+        # Make the sidecar binary executable
+        sidecar_binary = os.path.join(target_dir, BINARY)
+        if os.path.exists(sidecar_binary):
+            os.chmod(sidecar_binary, 0o755)
             logging.info(f"Made {BINARY} executable")
         else:
-            logging.error(f"Sidecar script not found after copy: {sidecar_script}")
+            logging.error(f"Sidecar binary not found after copy: {sidecar_binary}")
         
-        # Verify vendor directory was copied
+        # Vendor directory is optional (not needed for self-contained binary)
         vendor_dir = os.path.join(target_dir, "vendor")
         if os.path.exists(vendor_dir):
             try:
                 vendor_contents = os.listdir(vendor_dir)
-                logging.info(f"Vendor directory copied successfully with contents: {vendor_contents}")
+                logging.info(f"Vendor directory found with contents: {vendor_contents}")
             except Exception as e:
                 logging.error(f"Error listing vendor directory: {e}")
         else:
-            logging.error(f"CRITICAL: Vendor directory not found after copying: {vendor_dir}")
-            return False
+            logging.info(f"No vendor directory present (not required for binary sidecar)")
         
         # List final target directory contents
         try:
@@ -232,41 +227,21 @@ def _set_up_environment():
 
 
 def _is_sidecar_installed():
-    sidecar_script = os.path.join(SIDECAR_DIR, BINARY)
-    vendor_dir = os.path.join(SIDECAR_DIR, "vendor")
+    sidecar_binary = os.path.join(SIDECAR_DIR, BINARY)
     
     logging.info(f"Checking sidecar installation:")
-    logging.info(f"  Script path: {sidecar_script}")
-    logging.info(f"  Vendor path: {vendor_dir}")
-    logging.info(f"  Script exists: {os.path.exists(sidecar_script)}")
-    logging.info(f"  Vendor exists: {os.path.exists(vendor_dir)}")
+    logging.info(f"  Binary path: {sidecar_binary}")
+    logging.info(f"  Binary exists: {os.path.exists(sidecar_binary)}")
     
-    if os.path.exists(sidecar_script):
-        if os.path.exists(vendor_dir):
-            # List vendor contents for debugging
-            try:
-                vendor_contents = os.listdir(vendor_dir)
-                logging.info(f"Vendor directory contents: {vendor_contents}")
-            except Exception as e:
-                logging.error(f"Error listing vendor directory: {e}")
-            
-            logging.info("Custom Python sidecar and dependencies found")
-            return True
-        else:
-            logging.error("Custom Python sidecar found but vendor dependencies missing")
-            # List what's actually in the sidecar directory
-            try:
-                sidecar_contents = os.listdir(SIDECAR_DIR)
-                logging.info(f"Sidecar directory contents: {sidecar_contents}")
-            except Exception as e:
-                logging.error(f"Error listing sidecar directory: {e}")
+    if os.path.exists(sidecar_binary):
+        logging.info("Sidecar binary found")
+        return True
     else:
-        logging.error("Custom Python sidecar not found")
-        # Check if the directory exists at all
+        logging.error("Sidecar binary not found")
         if os.path.exists(SIDECAR_DIR):
             try:
                 sidecar_contents = os.listdir(SIDECAR_DIR)
-                logging.info(f"Sidecar directory exists but script missing. Contents: {sidecar_contents}")
+                logging.info(f"Sidecar directory exists but binary missing. Contents: {sidecar_contents}")
             except Exception as e:
                 logging.error(f"Error listing sidecar directory: {e}")
         else:
