@@ -88,6 +88,11 @@ dependencies:
     commit: 5fed98f8
     fs: cflinuxfs4
     version: 3.2.2
+  sap:
+    hana:
+      client:
+        artifact: "https://repo1.maven.org/maven2/com/sap/cloud/db/jdbc/ngdbc/{{ version }}/ngdbc-{{ version }}.jar"
+        version: "2.27.7"
   telegraf:
     agent:
       artifact: telegraf/telegraf-{{ version }}_linux_amd64.tar.gz
