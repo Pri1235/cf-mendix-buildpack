@@ -70,16 +70,23 @@ def stage_hana_client(buildpack_dir, build_dir, cache_dir):
     if not is_sap_hana_client_enabled():
         return
 
-    logging.debug("Staging SAP HANA client JAR...")
-    dest = os.path.join(build_dir, "model", "lib", "userlib")
-    util.mkdir_p(dest)
+    try:
+        logging.debug("Staging SAP HANA client JAR...")
+        dest = os.path.join(build_dir, "model", "lib", "userlib")
+        util.mkdir_p(dest)
 
-    custom_url = os.environ.get(SAP_HANA_CLIENT_URL_KEY, "").strip()
-    if custom_url:
-        dependency = {
-            "name": ["sap", "hana", "client"],
-            "artifact": custom_url,
-        }
+        custom_url = os.environ.get(SAP_HANA_CLIENT_URL_KEY, "").strip()
+        if custom_url:
+            dependency = {
+                "name": ["sap", "hana", "client"],
+                "artifact": custom_url,
+            }
+            jar_name = custom_url.split("/")[-1]
+        else:
+            dependency = _SAP_HANA_CLIENT_DEPENDENCY
+            dep = util.get_dependency(_SAP_HANA_CLIENT_DEPENDENCY, buildpack_dir=buildpack_dir)
+            jar_name = "ngdbc-{}.jar".format(dep["version"])
+
         util.resolve_dependency(
             dependency,
             dest,
@@ -87,15 +94,16 @@ def stage_hana_client(buildpack_dir, build_dir, cache_dir):
             cache_dir=cache_dir,
             unpack=False,
         )
-    else:
-        util.resolve_dependency(
-            _SAP_HANA_CLIENT_DEPENDENCY,
+        logging.info(
+            "SAP HANA client JAR [%s] staged to [%s]",
+            jar_name,
             dest,
-            buildpack_dir=buildpack_dir,
-            cache_dir=cache_dir,
-            unpack=False,
         )
-    logging.info("SAP HANA client JAR staged to [%s]", dest)
+    except Exception:
+        logging.warning(
+            "Failed to stage SAP HANA client JAR, continuing deployment...",
+            exc_info=True,
+        )
 
 
 def stage(buildpack_dir, build_path, cache_path):
