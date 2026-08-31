@@ -217,6 +217,7 @@ if __name__ == "__main__":
     metering.stage(BUILDPACK_DIR, BUILD_DIR, CACHE_DIR)
     database.stage(BUILDPACK_DIR, BUILD_DIR)
     runtime.stage(BUILDPACK_DIR, BUILD_DIR, CACHE_DIR)
+    runtime.stage_hana_client(BUILDPACK_DIR, BUILD_DIR, CACHE_DIR)
     logs.stage(BUILDPACK_DIR, BUILD_DIR, CACHE_DIR)
     nginx.stage(BUILDPACK_DIR, BUILD_DIR, CACHE_DIR)
     logging.info("Mendix Cloud Foundry Buildpack staging completed")

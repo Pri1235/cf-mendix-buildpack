@@ -57,6 +57,47 @@ def is_version_maintained(version):
     return False
 
 
+SAP_HANA_CLIENT_ENABLED_KEY = "SAP_HANA_CLIENT_ENABLED"
+SAP_HANA_CLIENT_URL_KEY = "SAP_HANA_CLIENT_URL"
+_SAP_HANA_CLIENT_DEPENDENCY = "sap.hana.client"
+
+
+def is_sap_hana_client_enabled():
+    return bool(os.environ.get(SAP_HANA_CLIENT_ENABLED_KEY, "").strip())
+
+
+def stage_hana_client(buildpack_dir, build_dir, cache_dir):
+    if not is_sap_hana_client_enabled():
+        return
+
+    logging.debug("Staging SAP HANA client JAR...")
+    dest = os.path.join(build_dir, "model", "lib", "userlib")
+    util.mkdir_p(dest)
+
+    custom_url = os.environ.get(SAP_HANA_CLIENT_URL_KEY, "").strip()
+    if custom_url:
+        dependency = {
+            "name": ["sap", "hana", "client"],
+            "artifact": custom_url,
+        }
+        util.resolve_dependency(
+            dependency,
+            dest,
+            buildpack_dir=buildpack_dir,
+            cache_dir=cache_dir,
+            unpack=False,
+        )
+    else:
+        util.resolve_dependency(
+            _SAP_HANA_CLIENT_DEPENDENCY,
+            dest,
+            buildpack_dir=buildpack_dir,
+            cache_dir=cache_dir,
+            unpack=False,
+        )
+    logging.info("SAP HANA client JAR staged to [%s]", dest)
+
+
 def stage(buildpack_dir, build_path, cache_path):
     logging.debug("Creating directory structure for Mendix runtime...")
     for name in ["runtimes", "log", "database", "data", "bin"]:
