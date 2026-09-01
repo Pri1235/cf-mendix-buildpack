@@ -91,8 +91,8 @@ dependencies:
   sap:
     hana:
       client:
-        artifact: "https://nexus.rnd.mendix.com/repository/repo1-proxy/com/sap/cloud/db/jdbc/ngdbc/{{ version }}/ngdbc-{{ version }}.jar"
-        version: "2.27.7"
+        artifact: "/mx-cdn/mcdep/sap-hana-client/ngdbc-{{ version }}.jar"
+        version: "2.29.11"
   telegraf:
     agent:
       artifact: telegraf/telegraf-{{ version }}_linux_amd64.tar.gz
