@@ -91,7 +91,7 @@ dependencies:
   sap:
     hana:
       client:
-        artifact: "/mx-cdn/mcdep/sap-hana-client/ngdbc-{{ version }}.jar"
+        artifact: "ngdbc-{{ version }}.jar"
         version: "2.29.11"
   telegraf:
     agent:
