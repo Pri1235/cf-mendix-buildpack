@@ -91,7 +91,7 @@ dependencies:
   sap:
     hana:
       client:
-        artifact: "https://repo1.maven.org/maven2/com/sap/cloud/db/jdbc/ngdbc/{{ version }}/ngdbc-{{ version }}.jar"
+        artifact: "https://nexus.rnd.mendix.com/repository/repo1-proxy/com/sap/cloud/db/jdbc/ngdbc/{{ version }}/ngdbc-{{ version }}.jar"
         version: "2.27.7"
   telegraf:
     agent:
