@@ -57,17 +57,19 @@ def is_version_maintained(version):
     return False
 
 
-SAP_HANA_CLIENT_ENABLED_KEY = "SAP_HANA_CLIENT_ENABLED"
-SAP_HANA_CLIENT_URL_KEY = "SAP_HANA_CLIENT_URL"
 _SAP_HANA_CLIENT_DEPENDENCY = "sap.hana.client"
 
 
-def is_sap_hana_client_enabled():
-    return bool(os.environ.get(SAP_HANA_CLIENT_ENABLED_KEY, "").strip())
+def _is_sap_hana_client_enabled():
+    return bool(os.environ.get("SAP_HANA_CLIENT_ENABLED", "").strip())
+
+
+def _get_sap_hana_client_url():
+    return os.environ.get("SAP_HANA_CLIENT_URL", "").strip()
 
 
 def stage_hana_client(buildpack_dir, build_dir, cache_dir):
-    if not is_sap_hana_client_enabled():
+    if not _is_sap_hana_client_enabled():
         return
 
     try:
@@ -75,7 +77,7 @@ def stage_hana_client(buildpack_dir, build_dir, cache_dir):
         dest = os.path.join(build_dir, "model", "lib", "userlib")
         util.mkdir_p(dest)
 
-        custom_url = os.environ.get(SAP_HANA_CLIENT_URL_KEY, "").strip()
+        custom_url = _get_sap_hana_client_url()
         if custom_url:
             dependency = {
                 "name": ["sap", "hana", "client"],
