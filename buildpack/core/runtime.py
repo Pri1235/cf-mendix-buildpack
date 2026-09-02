@@ -61,7 +61,7 @@ _SAP_HANA_CLIENT_DEPENDENCY = "sap.hana.client"
 
 
 def _is_sap_hana_client_enabled():
-    return bool(os.environ.get("SAP_HANA_CLIENT_ENABLED", "").strip())
+    return os.environ.get("INCLUDE_SAP_HANA_CLIENT", "").strip().lower() == "true"
 
 
 def stage_hana_client(buildpack_dir, build_dir, cache_dir):
