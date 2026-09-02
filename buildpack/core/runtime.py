@@ -64,33 +64,17 @@ def _is_sap_hana_client_enabled():
     return bool(os.environ.get("SAP_HANA_CLIENT_ENABLED", "").strip())
 
 
-def _get_sap_hana_client_url():
-    return os.environ.get("SAP_HANA_CLIENT_URL", "").strip()
-
-
 def stage_hana_client(buildpack_dir, build_dir, cache_dir):
     if not _is_sap_hana_client_enabled():
         return
 
     try:
-        logging.debug("Staging SAP HANA client JAR...")
         dest = os.path.join(build_dir, "model", "lib", "userlib")
         util.mkdir_p(dest)
-
-        custom_url = _get_sap_hana_client_url()
-        if custom_url:
-            dependency = {
-                "name": ["sap", "hana", "client"],
-                "artifact": custom_url,
-            }
-            jar_name = custom_url.split("/")[-1]
-        else:
-            dependency = _SAP_HANA_CLIENT_DEPENDENCY
-            dep = util.get_dependency(_SAP_HANA_CLIENT_DEPENDENCY, buildpack_dir=buildpack_dir)
-            jar_name = "ngdbc-{}.jar".format(dep["version"])
-
+        dep = util.get_dependency(_SAP_HANA_CLIENT_DEPENDENCY, buildpack_dir=buildpack_dir)
+        jar_name = "ngdbc-{}.jar".format(dep["version"])
         util.resolve_dependency(
-            dependency,
+            _SAP_HANA_CLIENT_DEPENDENCY,
             dest,
             buildpack_dir=buildpack_dir,
             cache_dir=cache_dir,
