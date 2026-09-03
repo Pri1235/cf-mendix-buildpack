@@ -61,7 +61,7 @@ _SAP_HANA_CLIENT_CDN_PREFIX = "/mx-buildpack/sap-hana-client"
 
 
 def _is_sap_hana_client_enabled():
-    return os.environ.get("INCLUDE_SAP_HANA_CLIENT", "").strip().lower() == "true"
+    return os.environ.get("MXRUNTIME_IncludeSAPHanaClient", "").strip().lower() == "true"
 
 
 def _get_hana_jar_name():
