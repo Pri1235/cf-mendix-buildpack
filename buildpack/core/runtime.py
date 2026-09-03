@@ -57,29 +57,32 @@ def is_version_maintained(version):
     return False
 
 
-_SAP_HANA_CLIENT_DEPENDENCY = "sap.hana.client"
+_SAP_HANA_CLIENT_CDN_PREFIX = "/mx-buildpack/sap-hana-client"
 
 
 def _is_sap_hana_client_enabled():
     return os.environ.get("INCLUDE_SAP_HANA_CLIENT", "").strip().lower() == "true"
 
 
-def stage_hana_client(buildpack_dir, build_dir, cache_dir):
+def _get_hana_jar_name():
+    import requests as req
+
+    version_url = util.get_blobstore_url(f"{_SAP_HANA_CLIENT_CDN_PREFIX}/version.txt")
+    resp = req.get(version_url, timeout=10)
+    resp.raise_for_status()
+    return f"ngdbc-{resp.text.strip()}.jar"
+
+
+def stage_hana_client(build_dir):
     if not _is_sap_hana_client_enabled():
         return
 
     try:
         dest = os.path.join(build_dir, "model", "lib", "userlib")
         util.mkdir_p(dest)
-        dep = util.get_dependency(_SAP_HANA_CLIENT_DEPENDENCY, buildpack_dir=buildpack_dir)
-        jar_name = "ngdbc-{}.jar".format(dep["version"])
-        util.resolve_dependency(
-            _SAP_HANA_CLIENT_DEPENDENCY,
-            dest,
-            buildpack_dir=buildpack_dir,
-            cache_dir=cache_dir,
-            unpack=False,
-        )
+        jar_name = _get_hana_jar_name()
+        jar_url = util.get_blobstore_url(f"{_SAP_HANA_CLIENT_CDN_PREFIX}/{jar_name}")
+        util.download(jar_url, os.path.join(dest, jar_name))
         logging.info(
             "SAP HANA client JAR [%s] staged to [%s]",
             jar_name,

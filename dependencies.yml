@@ -88,11 +88,6 @@ dependencies:
     commit: 5fed98f8
     fs: cflinuxfs4
     version: 3.2.2
-  sap:
-    hana:
-      client:
-        artifact: "sap-hana-client/ngdbc-{{ version }}.jar"
-        version: "2.29.11"
   telegraf:
     agent:
       artifact: telegraf/telegraf-{{ version }}_linux_amd64.tar.gz
