@@ -57,7 +57,7 @@ def is_version_maintained(version):
     return False
 
 
-_SAP_HANA_CLIENT_CDN_PREFIX = "/mx-buildpack/sap-hana-client"
+_SAP_HANA_CLIENT_CDN_PREFIX = util.BLOBSTORE_BUILDPACK_DEFAULT_PREFIX + "sap-hana-client"
 
 
 def _is_sap_hana_client_enabled():
