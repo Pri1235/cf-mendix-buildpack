@@ -273,9 +273,9 @@ Selection based on name `hana` and tags `["hana", "database", "relational"]`.
   ],
 ```
 
-#### SAP HANA JDBC Client JAR
+#### SAP HANA Client
 
-To include the SAP HANA JDBC client JAR (`ngdbc.jar`) in your app's classpath at staging time, set the following environment variable:
+To include the SAP HANA client JAR (`ngdbc.jar`) in your app's classpath at staging time, set the following environment variable:
 
 ```shell
 cf set-env <YOUR_APP> MXRUNTIME_IncludeSAPHanaClient true

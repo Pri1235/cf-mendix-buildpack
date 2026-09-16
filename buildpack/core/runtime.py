@@ -9,6 +9,7 @@ import subprocess
 import time
 
 import backoff
+import requests
 from buildpack import util
 from lib.m2ee import M2EE as m2ee_class
 from lib.m2ee.version import MXVersion
@@ -56,32 +57,20 @@ def is_version_maintained(version):
         return True
     return False
 
-
-_SAP_HANA_CLIENT_CDN_PREFIX = util.BLOBSTORE_BUILDPACK_DEFAULT_PREFIX + "sap-hana-client"
-
-
-def _is_sap_hana_client_enabled():
-    return os.environ.get("MXRUNTIME_IncludeSAPHanaClient", "").strip().lower() == "true"
-
-
-def _get_hana_jar_version():
-    import requests as req
-
-    version_url = util.get_blobstore_url(f"{_SAP_HANA_CLIENT_CDN_PREFIX}/version.txt")
-    resp = req.get(version_url, timeout=10)
-    resp.raise_for_status()
-    return resp.text.strip()
-
-
 def _stage_hana_client(build_dir):
-    if not _is_sap_hana_client_enabled():
+    enabled = os.environ.get("MXRUNTIME_IncludeSAPHanaClient", "").strip().lower() == "true"
+    if not enabled:
         return
 
+    cdn_prefix = util.BLOBSTORE_BUILDPACK_DEFAULT_PREFIX + "sap-hana-client"
     try:
         dest = os.path.join(build_dir, "model", "lib", "userlib")
         util.mkdir_p(dest)
-        jar_name = f"ngdbc-{_get_hana_jar_version()}.jar"
-        jar_url = util.get_blobstore_url(f"{_SAP_HANA_CLIENT_CDN_PREFIX}/{jar_name}")
+        version_url = util.get_blobstore_url(f"{cdn_prefix}/version.txt")
+        resp = requests.get(version_url, timeout=10)
+        resp.raise_for_status()
+        jar_name = f"ngdbc-{resp.text.strip()}.jar"
+        jar_url = util.get_blobstore_url(f"{cdn_prefix}/{jar_name}")
         util.download(jar_url, os.path.join(dest, jar_name))
         logging.info(
             "SAP HANA client JAR [%s] staged to [%s]",
