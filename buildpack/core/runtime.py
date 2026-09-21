@@ -69,7 +69,7 @@ def _stage_hana_client(build_dir):
         if existing:
             logging.info(
                 "SAP HANA client JAR [%s] already present, skipping download",
-                os.path.basename(existing[0]),
+                existing[0],
             )
             return
 
