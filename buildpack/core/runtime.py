@@ -65,14 +65,11 @@ def _stage_hana_client(build_dir):
 
     model_lib = os.path.join(build_dir, "model", "lib")
     for lib_dir in ("userlib", "vendorlib"):
-        existing = glob.glob(os.path.join(model_lib, lib_dir, "ngdbc*.jar"))
+        existing = glob.glob(os.path.join(model_lib, lib_dir, "ngdbc-*.jar"))
         if existing:
-            match = re.search(r"ngdbc-(.+)\.jar", os.path.basename(existing[0]))
-            version = match.group(1) if match else "unknown"
             logging.info(
-                "SAP HANA client JAR version [%s] already present at [%s], skipping download",
-                version,
-                existing[0],
+                "SAP HANA client JAR [%s] already present, skipping download",
+                os.path.basename(existing[0]),
             )
             return
 
