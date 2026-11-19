@@ -8,7 +8,7 @@ antlr4-python3-runtime==4.9.3
     # via omegaconf
 backoff==2.2.1
     # via -r requirements.in
-certifi==2024.8.30
+certifi==2026.10.19
     # via
     #   -r requirements.in
     #   requests
@@ -48,7 +48,7 @@ typing-extensions==4.15.0
     # via
     #   -r requirements.in
     #   cryptography
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   -r requirements.in
     #   requests
